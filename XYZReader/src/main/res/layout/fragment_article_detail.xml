@@ -20,25 +20,7 @@
                 android:layout_height="match_parent">
 
                 <!-- Photo -->
-                <FrameLayout
-                    android:id="@+id/photo_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@color/photo_placeholder">
-
-                    <!--suppress AndroidLintContentDescription -->
-                    <ImageView
-                        android:id="@+id/photo"
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/detail_photo_height"
-                        android:scaleType="centerCrop" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/photo_background_protection" />
-
-                </FrameLayout>
+                <include layout="@layout/fragment_article_detail_banner"/>
 
                 <com.example.xyzreader.ui.MaxWidthLinearLayout
                     android:layout_width="match_parent"
@@ -108,7 +90,9 @@
         android:layout_margin="@dimen/fab_margin"
         app:layout_anchor="@id/draw_insets_frame_layout"
         app:layout_anchorGravity="bottom|end"
-        app:srcCompat="@drawable/ic_share" />
+        app:srcCompat="@drawable/ic_share"
+        app:pressedTranslationZ="12dp"
+        app:elevation="6dp"/> <!-- TODO [FIXED] Added resting and pressed elevation, 12dp and 6dp respectively for FAB  -->
 
     <!-- Loading Indicator-->
     <ProgressBar

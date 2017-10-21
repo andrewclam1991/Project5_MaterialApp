@@ -5,7 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -29,6 +32,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
+
+import static android.support.design.widget.Snackbar.LENGTH_INDEFINITE;
 
 /**
  * An activity representing a list of Articles. This activity has different presentations for
@@ -99,12 +104,28 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     private boolean mIsRefreshing = false;
+    private boolean mIsConnected;
+    private Snackbar mSnackbar;
 
     private BroadcastReceiver mRefreshingReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (UpdaterService.BROADCAST_ACTION_STATE_CHANGE.equals(intent.getAction())) {
                 mIsRefreshing = intent.getBooleanExtra(UpdaterService.EXTRA_REFRESHING, false);
+                if (intent.hasExtra(UpdaterService.EXTRA_CONNECTED)) {
+                    mIsConnected = intent.getBooleanExtra(UpdaterService.EXTRA_CONNECTED, false);
+                    // TODO [SUGGESTION] Check internet connection - informing that there is no network connection.
+                    if (mSnackbar == null)  mSnackbar = Snackbar.make(mSwipeRefreshLayout,
+                            "No network connection", LENGTH_INDEFINITE);
+
+                    if (!mIsConnected) {
+                        mSnackbar.show();
+                    }else
+                    {
+                        // Network is now connected
+                        mSnackbar.dismiss();
+                    }
+                }
                 updateRefreshingUI();
             }
         }
@@ -157,8 +178,13 @@ public class ArticleListActivity extends AppCompatActivity implements
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    startActivity(new Intent(Intent.ACTION_VIEW,
-                            ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition()))));
+                    Intent intent = new Intent(Intent.ACTION_VIEW,
+                            ItemsContract.Items.buildItemUri(
+                                    getItemId(vh.getAdapterPosition())
+                            )
+                    );
+
+                    startActivity(intent);
                 }
             });
             return vh;
@@ -195,9 +221,15 @@ public class ArticleListActivity extends AppCompatActivity implements
                         + "<br/>" + " by "
                         + mCursor.getString(ArticleLoader.Query.AUTHOR)));
             }
-            holder.thumbnailView.setImageUrl(
-                    mCursor.getString(ArticleLoader.Query.THUMB_URL),
-                    ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
+
+            // TODO [USABILITY] Use Glide to load size-optimized image to improve performance
+            // Glide automatically resize and cache the image base on the size of the ImageView
+            String url = mCursor.getString(ArticleLoader.Query.THUMB_URL);
+            GlideApp.with(ArticleListActivity.this)
+                    .load(url)
+                    .override(450,300)
+                    .into(holder.thumbnailView);
+
             holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
         }
 
@@ -208,13 +240,13 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     private static class ViewHolder extends RecyclerView.ViewHolder {
-        DynamicHeightNetworkImageView thumbnailView;
+        DynamicHeightImageView thumbnailView;
         TextView titleView;
         TextView subtitleView;
 
         ViewHolder(View view) {
             super(view);
-            thumbnailView = view.findViewById(R.id.thumbnail);
+            thumbnailView = view.findViewById(R.id.photo);
             titleView = view.findViewById(R.id.article_title);
             subtitleView = view.findViewById(R.id.article_subtitle);
         }
